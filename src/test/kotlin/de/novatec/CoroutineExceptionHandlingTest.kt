@@ -8,7 +8,7 @@ import kotlin.coroutines.CoroutineContext
 class CoroutineExceptionHandlingTest {
 
     @Nested
-    inner class `inside a non-root coroutine` {
+    inner class `inside a non-root coroutine scope` {
 
         @Test
         fun `throws exception to parent in an async block`() {
@@ -38,7 +38,9 @@ class CoroutineExceptionHandlingTest {
 
             assertThrows<IllegalArgumentException> {
                 runBlocking {
-                    launch(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable -> isExceptionHandlerInvoked = true }) {
+                    launch(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable ->
+                        isExceptionHandlerInvoked = true
+                    }) {
                         throw IllegalArgumentException("launch without root coroutine")
                     }
                 }
@@ -52,7 +54,9 @@ class CoroutineExceptionHandlingTest {
 
             assertThrows<IllegalArgumentException> {
                 runBlocking {
-                    async(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable -> isExceptionHandlerInvoked = true }) {
+                    async(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable ->
+                        isExceptionHandlerInvoked = true
+                    }) {
                         throw IllegalArgumentException("async without root coroutine")
                     }
                 }
@@ -62,7 +66,7 @@ class CoroutineExceptionHandlingTest {
     }
 
     @Nested
-    inner class `inside a root coroutine` {
+    inner class `inside a root coroutine scope` {
 
         private val root = CoroutineScope(Job())
 
@@ -93,11 +97,13 @@ class CoroutineExceptionHandlingTest {
         @Test
         fun `trigger installed exception handler in a launch block`() {
             var isExceptionHandlerInvoked = false
-            val rootWithExceptionHandler = CoroutineScope(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable ->
-                isExceptionHandlerInvoked = true
-            })
+            val rootWithExceptionHandler =
+                CoroutineScope(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable ->
+                    isExceptionHandlerInvoked = true
+                })
 
-            val result = rootWithExceptionHandler.launch { throw IllegalArgumentException("launch inside root coroutine") }
+            val result =
+                rootWithExceptionHandler.launch { throw IllegalArgumentException("launch inside root coroutine") }
 
             runBlocking {
                 result.join()
@@ -108,15 +114,62 @@ class CoroutineExceptionHandlingTest {
         @Test
         fun `does not trigger installed exception handler in an async block`() {
             var isExceptionHandlerInvoked = false
-            val rootWithExceptionHandler = CoroutineScope(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable ->
-                isExceptionHandlerInvoked = true
-            })
+            val rootWithExceptionHandler =
+                CoroutineScope(CoroutineExceptionHandler { _: CoroutineContext, _: Throwable ->
+                    isExceptionHandlerInvoked = true
+                })
 
-            val result = rootWithExceptionHandler.async { throw IllegalArgumentException("async inside root coroutine") }
+            val result =
+                rootWithExceptionHandler.async { throw IllegalArgumentException("async inside root coroutine") }
 
             runBlocking {
                 result.join()
                 assertFalse(isExceptionHandlerInvoked)
+            }
+        }
+    }
+
+    @Nested
+    inner class `inside a supervised scope` {
+
+        private val supervisedJob = SupervisorJob()
+
+        private val exceptionHandler =
+            CoroutineExceptionHandler { _: CoroutineContext, _: Throwable -> println("something") }
+
+        @Test
+        fun `async without exception handler`() {
+            runBlocking {
+                supervisorScope {
+
+                }
+            }
+        }
+
+        @Test
+        fun `async with exception handler`() {
+            runBlocking {
+                supervisorScope {
+
+                }
+            }
+        }
+
+        @Test
+        fun `launch without exception handler`() {
+            runBlocking {
+                supervisorScope {
+
+                }
+            }
+        }
+
+        @Test
+        fun `launch with exception handler`() {
+            runBlocking {
+                supervisorScope {
+
+                }
             }
         }
     }
